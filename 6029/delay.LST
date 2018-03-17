@@ -1,0 +1,31 @@
+C51 COMPILER V9.00   DELAY                                                                 01/11/2015 11:09:47 PAGE 1   
+
+
+C51 COMPILER V9.00, COMPILATION OF MODULE DELAY
+OBJECT MODULE PLACED IN delay.OBJ
+COMPILER INVOKED BY: D:\Automation software\Keil4\C51\BIN\C51.EXE delay.c BROWSE DEBUG OBJECTEXTEND
+
+line level    source
+
+   1          #include<reg52.h>
+   2          //延时（毫秒级） 晶振11.0592MHz
+   3          void delayms(unsigned int z)
+   4          {
+   5   1              unsigned int x,y;
+   6   1              for(x=z;x>0;x--)
+   7   1                      for(y=110;y>0;y--);              //1T单片机i=600，若是12T单片机i=125
+   8   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     30    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
