@@ -1,0 +1,4 @@
+"STARTUP.obj",
+"piturechina.obj" 
+TO "guozu" 
+RAMSIZE(256) 
