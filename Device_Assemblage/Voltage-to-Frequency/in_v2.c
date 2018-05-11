@@ -1,6 +1,7 @@
 /*
 主控：Lonworks系列 FT5000
 显示：MC14489
+压频转换芯片：LM331
 */
 #pragma num_alias_table_entries 1
 #pragma num_addr_table_entries 1
