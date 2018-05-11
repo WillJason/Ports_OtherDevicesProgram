@@ -1,3 +1,7 @@
+/*
+主控：Lonworks系列 FT5000
+显示：MC14489
+*/
 #pragma num_alias_table_entries 1
 #pragma num_addr_table_entries 1
 #pragma relaxed_casting_on
