@@ -1,0 +1,11 @@
+".\output\STARTUP.obj",
+".\output\iap.obj",
+".\output\timer.obj",
+".\output\uart.obj",
+".\output\yx5200.obj",
+".\output\Ps2_Int.obj",
+".\output\beep.obj",
+".\output\global.obj",
+".\output\main.obj" 
+TO ".\output\JXKJ-zdn" 
+PRINT(".\JXKJ-zdn.m51") RAMSIZE(256) 

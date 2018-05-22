@@ -1,0 +1,111 @@
+C51 COMPILER V9.00   IAP                                                                   05/22/2018 18:34:07 PAGE 1   
+
+
+C51 COMPILER V9.00, COMPILATION OF MODULE IAP
+OBJECT MODULE PLACED IN .\output\iap.obj
+COMPILER INVOKED BY: D:\Keil\C51\BIN\C51.EXE src\iap.c LARGE BROWSE INCDIR(.\inc) DEBUG OBJECTEXTEND PRINT(.\iap.lst) OB
+                    -JECT(.\output\iap.obj)
+
+line level    source
+
+   1          /********************************************************************************************
+   2                  文件: iap.c
+   3                  作者: WillJason
+   4                  版本：V1.0
+   5                  备注：这个文件提供了iap模块的固件库        
+   6          *********************************************************************************************/
+   7          #include "STC12C5A60S2.h"
+   8          #include "iap.h"
+   9          #include "intrins.h"
+  10          
+  11          #define   CMD_IDLE     0         //Stand-By        空闲指令
+  12          #define   CMD_READ     1         //Byte-Read       字节读指令
+  13          #define   CMD_PROGRAM  2         //Byte-Program    字节编程指令
+  14          #define   CMD_ERASE    3         //Sector-Erase    扇区擦除指令
+  15          #define   ENABLE_IAP   0x83      //if SYSCLK<12MHz 使能IAP
+  16            
+  17          /******************************************************************************************
+  18                  函数功能：IAP进入空闲状态
+  19                  入口参数：无
+  20                  返回参数：无    
+  21                  函数说明：无
+  22          *******************************************************************************************/
+  23          void iap_idle()
+  24          {
+  25   1              IAP_CONTR = 0;          //Close IAP function
+  26   1              IAP_CMD = 0;            //Clear command to standby
+  27   1              IAP_TRIG = 0;           //Clear trigger register
+  28   1              IAP_ADDRH = 0x80;       //Data ptr point to non-EEPROM area
+  29   1              IAP_ADDRL = 0;          //Clear IAP address to prevent misuse
+  30   1      }
+  31          /******************************************************************************************
+  32                  函数功能：IAP读字节
+  33                  入口参数：addr：字节地址
+  34                  返回参数：读出的字节    
+  35                  函数说明：无
+  36          *******************************************************************************************/
+  37          uint8_t iap_read_byte(uint16_t addr)
+  38          {
+  39   1              uint8_t dat;       //Data buffer
+  40   1              IAP_CONTR = ENABLE_IAP;  //Open IAP function, and set wait time
+  41   1              IAP_CMD = CMD_READ;      //Set ISP/IAP/EEPROM READ command
+  42   1              IAP_ADDRL = addr;        //Set ISP/IAP/EEPROM address low
+  43   1              IAP_ADDRH = addr >> 8;   //Set ISP/IAP/EEPROM address high
+  44   1              IAP_TRIG = 0x5a;         //Send trigger command1 (0x5a)
+  45   1              IAP_TRIG = 0xa5;         //Send trigger command2 (0xa5)
+  46   1              _nop_();                 //MCU will hold here until ISP/IAP/EEPROM  //operation complete
+  47   1              dat = IAP_DATA;          //Read ISP/IAP/EEPROM data
+  48   1              iap_idle();              //Close ISP/IAP/EEPROM function
+  49   1              return dat;              //Return Flash data
+  50   1      }
+  51          /******************************************************************************************
+  52                  函数功能：IAP编程字节
+  53                  入口参数：addr：编程地址 dat：编程字节
+  54                  返回参数：无    
+C51 COMPILER V9.00   IAP                                                                   05/22/2018 18:34:07 PAGE 2   
+
+  55                  函数说明：无
+  56          *******************************************************************************************/
+  57          void iap_program_byte(uint16_t addr, uint8_t dat)
+  58          {
+  59   1              IAP_CONTR = ENABLE_IAP;  //Open IAP function, and set wait time
+  60   1              IAP_CMD = CMD_PROGRAM;   //Set ISP/IAP/EEPROM PROGRAM command
+  61   1              IAP_ADDRL = addr;        //Set ISP/IAP/EEPROM address low
+  62   1              IAP_ADDRH = addr >> 8;   //Set ISP/IAP/EEPROM address high
+  63   1              IAP_DATA = dat;          //Write ISP/IAP/EEPROM data
+  64   1              IAP_TRIG = 0x5a;         //Send trigger command1 (0x5a)
+  65   1              IAP_TRIG = 0xa5;         //Send trigger command2 (0xa5)
+  66   1              _nop_();                 //MCU will hold here until ISP/IAP/EEPROM       //operation complete
+  67   1              iap_idle();
+  68   1      }
+  69          /******************************************************************************************
+  70                  函数功能：IAP擦除扇区
+  71                  入口参数：扇区地址
+  72                  返回参数：无    
+  73                  函数说明：无
+  74          *******************************************************************************************/
+  75          void iap_erase_sector(uint16_t addr)
+  76          {
+  77   1              IAP_CONTR = ENABLE_IAP;   //Open IAP function, and set wait time
+  78   1              IAP_CMD = CMD_ERASE;      //Set ISP/IAP/EEPROM ERASE command
+  79   1              IAP_ADDRL = addr;         //Set ISP/IAP/EEPROM address low
+  80   1              IAP_ADDRH = addr >> 8;    //Set ISP/IAP/EEPROM address high
+  81   1              IAP_TRIG = 0x5a;          //Send trigger command1 (0x5a)
+  82   1              IAP_TRIG = 0xa5;          //Send trigger command2 (0xa5)
+  83   1              _nop_();                  //MCU will hold here until ISP/IAP/EEPROM  //operation complete
+  84   1              iap_idle();
+  85   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     83    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

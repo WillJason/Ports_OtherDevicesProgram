@@ -1,0 +1,159 @@
+C51 COMPILER V9.00   YX5200                                                                05/22/2018 18:34:09 PAGE 1   
+
+
+C51 COMPILER V9.00, COMPILATION OF MODULE YX5200
+OBJECT MODULE PLACED IN .\output\yx5200.obj
+COMPILER INVOKED BY: D:\Keil\C51\BIN\C51.EXE src\yx5200.c LARGE BROWSE INCDIR(.\inc) DEBUG OBJECTEXTEND PRINT(.\yx5200.l
+                    -st) OBJECT(.\output\yx5200.obj)
+
+line level    source
+
+   1          /********************************************************************************************
+   2                  文件: yx5200.c
+   3                  作者: WillJason
+   4                  版本：V1.0
+   5                  备注：这个文件提供了yx5200芯片的固件库             
+   6          *********************************************************************************************/
+   7          #include "STC12C5A60S2.h"
+   8          #include "yx5200.h"
+   9          #include "uart.h"
+  10          #include "io_config.h"
+  11          #include "global.h"
+  12          
+  13          uint8_t yx5200_cmd_buf[10];                                       //yx5200指令Buffer
+  14          MUSIC music;                                                                      //yx5200音乐播放结构体变量
+  15          
+  16          /********************************************************************************************
+  17                  函数功能：求和校验
+  18                  入口参数：Str变量指针 len变量长度  
+  19                  返回参数：无
+  20                  函数说明：和校验的思路如下：发送的指令，去掉起始和结束。将中间的6个字节进行累加，最后取反码
+  21                           接收端就将接收到的一帧数据，去掉起始和结束。将中间的数据累加，再加上接收到的校验
+  22                           字节。刚好为0.这样就代表接收到的数据完全正确。
+  23          ********************************************************************************************/
+  24          void do_sum(uint8_t *Str, uint8_t len)
+  25          {
+  26   1          uint16_t xorsum = 0;
+  27   1          uint8_t i;
+  28   1      
+  29   1          for(i = 0; i < len; i ++)
+  30   1          {
+  31   2              xorsum  = xorsum + Str[i];
+  32   2          }
+  33   1              xorsum     = 0 - xorsum;
+  34   1              *(Str + i)   = (uint8_t)(xorsum >> 8);
+  35   1              *(Str + i + 1) = (uint8_t)(xorsum & 0x00ff);
+  36   1      }
+  37          
+  38          /*******************************************************************************************
+  39                  函数功能：串口发送一帧数据
+  40                  入口参数：len:要发送的数据长度 
+  41                  返回说明：无 
+  42                  函数说明：无     
+  43          ********************************************************************************************/
+  44          void send_cmd(uint8_t len)
+  45          {
+  46   1          uint8_t i = 0 ;
+  47   1          uart1_send_byte(0x7E);   
+  48   1          for(i = 0; i < len; i ++)    
+  49   1          {
+  50   2                      uart1_send_byte(yx5200_cmd_buf[i]);
+  51   2          }
+  52   1          uart1_send_byte(0xEF) ;  
+  53   1      }
+  54          
+C51 COMPILER V9.00   YX5200                                                                05/22/2018 18:34:09 PAGE 2   
+
+  55          /******************************************************************************************
+  56                  函数功能： 串口1向yx5200芯片发送命令[包括控制和查询]
+  57                  入口参数： cmd:表示控制指令，请查阅指令表，还包括查询的相关指令            
+  58                             data:传送的参数
+  59                  返回参数： 无
+  60                  函数说明： 使用该函数之前，确保串口1已初始化
+  61                                     串口1向yx5200芯片发送命令后，需要延时200ms，
+  62                                     才可对yx5200芯片再一次操作      
+  63          ******************************************************************************************/
+  64          void send_yx5200_cmd(uint8_t cmd , uint16_t dat)
+  65          {
+  66   1              yx5200_cmd_buf[0] = 0xff;                             //保留字节 
+  67   1          yx5200_cmd_buf[1] = 0x06;                             //长度
+  68   1          yx5200_cmd_buf[2] = cmd;                              //控制指令
+  69   1          yx5200_cmd_buf[3] = 0;                                //不需要反馈
+  70   1          yx5200_cmd_buf[4] = (uint8_t)(dat >> 8);              //参数高字节
+  71   1          yx5200_cmd_buf[5] = (uint8_t)(dat);                   //参数低字节
+  72   1          do_sum(&yx5200_cmd_buf[0],6);                         //获得校验
+  73   1          send_cmd(8);                                                              //发送命令
+  74   1      }
+  75          
+  76          /******************************************************************************************
+  77                  函数功能：获得yx5200音乐播放完成状态
+  78                  入口参数：无
+  79                  返回参数：1:表示播放完毕
+  80                  函数说明：函数需要延时函数配合使用
+  81          *******************************************************************************************/
+  82          uint8_t yx5200_play_finish_statu(void)
+  83          {
+  84   1          uint8_t play_finish_statu = 0;                        //播放状态
+  85   1              static uint8_t play_finish_conuter = 0;               //播放计数
+  86   1              if(yx5200_play_busy_port != 0)                    
+  87   1          {           
+  88   2                      if(play_finish_conuter < 10) { play_finish_conuter++;   }
+  89   2                      else { play_finish_statu = 1;   }                          
+  90   2              }
+  91   1              else 
+  92   1              {
+  93   2                      if(play_finish_conuter > 0)     { play_finish_conuter--; }
+  94   2                      else play_finish_statu = 0;                                             
+  95   2              }               
+  96   1              return play_finish_statu;
+  97   1      }
+  98          /******************************************************************************************
+  99                  函数功能：播放指定的音乐文件
+ 100                  入口参数：指定的音乐文件
+ 101                  返回参数：无
+ 102                  函数说明：函数需要延时函数配合使用
+ 103          *******************************************************************************************/
+ 104          void Play_Set_Sound(uint16_t dat)
+ 105          {  
+ 106   1              music.cmd = 0x0F;                                                 //设置音乐播放指令    
+ 107   1              //if(yx5200_play_finish_statu())                      //音乐播放完成状态检查，
+ 108   1              //{
+ 109   1              //      music.statu_flag = 0;                   
+ 110   1              //}
+ 111   1              if((music.cmd != 0) && (music.statu_flag != 1))       //启动新的播放
+ 112   1              {
+ 113   2                      send_yx5200_cmd(music.cmd,dat);                   //发送音乐播放指令
+ 114   2                      delay_ms(200);                                                            //需延时200ms
+ 115   2                      //music.statu_flag = 1;                                               //播放状态标志置1
+ 116   2                      while(!yx5200_play_finish_statu()){delay_ms(2);}  //等待播放完成
+C51 COMPILER V9.00   YX5200                                                                05/22/2018 18:34:09 PAGE 3   
+
+ 117   2                      //relay_port =~relay_port;                                                //调试用
+ 118   2                      led_port = ~led_port;                                                 //led灯状态翻转                           
+ 119   2              }
+ 120   1          music.cmd = 0;
+ 121   1              //music.folder_num = 0;
+ 122   1              //delay_ms(1);
+ 123   1      }
+ 124          
+ 125          
+ 126          
+ 127          
+ 128          
+ 129          
+ 130          
+ 131          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    323    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =     16       7
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

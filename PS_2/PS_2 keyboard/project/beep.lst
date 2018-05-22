@@ -1,0 +1,82 @@
+C51 COMPILER V9.00   BEEP                                                                  05/22/2018 18:34:10 PAGE 1   
+
+
+C51 COMPILER V9.00, COMPILATION OF MODULE BEEP
+OBJECT MODULE PLACED IN .\output\beep.obj
+COMPILER INVOKED BY: D:\Keil\C51\BIN\C51.EXE src\beep.c LARGE BROWSE INCDIR(.\inc) DEBUG OBJECTEXTEND PRINT(.\beep.lst) 
+                    -OBJECT(.\output\beep.obj)
+
+line level    source
+
+   1          /********************************************************************************************
+   2                  文件: beep.c
+   3                  作者: WillJason
+   4                  版本：V1.0
+   5                  备注：这个文件提供了蜂鸣器的函数库         
+   6          *********************************************************************************************/
+   7          #include "STC12C5A60S2.h"
+   8          #include "Ps2_Int.h"
+   9          #include "io_config.h"
+  10          #include "uart.h"
+  11          #include "global.h"
+  12          #include "beep.h"
+  13          
+  14          /********************************************************************************************
+  15                  函数功能：有效按键蜂鸣器
+  16                  入口参数：无 
+  17                  返回参数：无
+  18                  函数说明：提供玩家按下有效按键时的蜂鸣声，用来表示密码，按下按键蜂鸣1声（100ms）
+  19          ********************************************************************************************/
+  20          void Other_Beep(void)                                                                     
+  21          {
+  22   1              beep_port = 1;delay_ms(100);beep_port = 0;                        //按键蜂鸣1声（100ms）
+  23   1      }
+  24          /********************************************************************************************
+  25                  函数功能：回车键蜂鸣器
+  26                  入口参数：无 
+  27                  返回参数：无
+  28                  函数说明：回车键：用来确定输入，输入密码后必须按下回车键确认。按下回车键后蜂鸣2声（响100ms、停50ms、响100
+             -ms）；
+  29          ********************************************************************************************/
+  30          void Enter_Beep(void)
+  31          {
+  32   1              beep_port = 1;                                                                            //蜂鸣2声（响100ms、停50ms、响100ms）
+  33   1              delay_ms(100);
+  34   1              beep_port = 0;
+  35   1              delay_ms(50);
+  36   1              beep_port = 1;
+  37   1              delay_ms(100);
+  38   1              beep_port = 0;
+  39   1      }
+  40          /********************************************************************************************
+  41                  函数功能：回格键蜂鸣器
+  42                  入口参数：无 
+  43                  返回参数：无
+  44                  函数说明：回格键：用来清除所有输入。按下回格键后蜂鸣2声（响100ms、停50ms、响100ms）；
+  45          ********************************************************************************************/
+  46          void Backspace_Beep(void)
+  47          {
+  48   1              beep_port = 1;                                                                            //蜂鸣2声（响100ms、停50ms、响100ms）
+  49   1              delay_ms(100);
+  50   1              beep_port = 0;
+  51   1              delay_ms(50);
+  52   1              beep_port = 1;
+  53   1              delay_ms(100);
+C51 COMPILER V9.00   BEEP                                                                  05/22/2018 18:34:10 PAGE 2   
+
+  54   1              beep_port = 0;
+  55   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    100    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =     18    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,29 @@
+<html>
+<body>
+<pre>
+<h1>µVision Build Log</h1>
+<h2>Project:</h2>
+C:\Users\1987_studio\Desktop\±¸·Ý\stc12mcu-project\project.uvproj
+Project File Date:  01/29/2016
+
+<h2>Output:</h2>
+Build target 'Target 1'
+assembling STARTUP.A51...
+compiling iap.c...
+compiling timer.c...
+compiling uart.c...
+compiling yx5200.c...
+compiling global.c...
+compiling main.c...
+linking...
+*** WARNING L16: UNCALLED SEGMENT, IGNORED FOR OVERLAY PROCESS
+    SEGMENT: ?PR?_IAP_READ_BYTE?IAP
+*** WARNING L16: UNCALLED SEGMENT, IGNORED FOR OVERLAY PROCESS
+    SEGMENT: ?PR?_IAP_PROGRAM_BYTE?IAP
+*** WARNING L16: UNCALLED SEGMENT, IGNORED FOR OVERLAY PROCESS
+    SEGMENT: ?PR?_IAP_ERASE_SECTOR?IAP
+*** WARNING L16: UNCALLED SEGMENT, IGNORED FOR OVERLAY PROCESS
+    SEGMENT: ?PR?TIMER0_INIT?TIMER
+Program Size: data=44.1 xdata=0 code=984
+creating hex file from ".\output\project"...
+".\output\project" - 0 Error(s), 4 Warning(s).
