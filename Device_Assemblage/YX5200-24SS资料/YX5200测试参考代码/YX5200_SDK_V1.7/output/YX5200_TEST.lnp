@@ -1,0 +1,10 @@
+".\output\STARTUP.obj",
+".\output\key.obj",
+".\output\Log.obj",
+".\output\main.obj",
+".\output\mylib.obj",
+".\output\SystemInit.obj",
+".\output\uart.obj",
+".\output\LCD1602.obj" 
+TO ".\output\QYMxFS_TEST" 
+PRINT(".\output\QYMxFS_TEST.m51") RAMSIZE(256) 

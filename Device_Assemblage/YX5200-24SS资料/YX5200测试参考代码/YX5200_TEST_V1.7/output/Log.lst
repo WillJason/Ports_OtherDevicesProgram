@@ -1,0 +1,39 @@
+C51 COMPILER V9.01   LOG                                                                   07/16/2014 12:05:51 PAGE 1   
+
+
+C51 COMPILER V9.01, COMPILATION OF MODULE LOG
+OBJECT MODULE PLACED IN .\output\Log.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE src\Log.c BROWSE DEBUG OBJECTEXTEND PRINT(.\output\Log.lst) OBJECT(.\output
+                    -\Log.obj)
+
+line level    source
+
+   1          /*******************************************************************************************
+   2          File Name:  Log.c
+   3          
+   4          Version:    1.00
+   5          
+   6          Discription: TEST开发日志信息
+   7          
+   8          Author:     tengcheng
+   9          
+  10          Date:       2013.05.06
+  11          
+  12          Copyright:(c) 2013 , All Rights Reserved.
+  13          *******************************************************************************************/
+  14          /*********更新时间*********2013-07-21*********/
+  15          //1、在测试版本V1.7的基础上分离出串口操作部分，称之为基本版
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   ----    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

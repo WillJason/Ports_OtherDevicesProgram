@@ -1,0 +1,1 @@
+"src\Log.c" BROWSE DEBUG OBJECTEXTEND PRINT(.\output\Log.lst) OBJECT(.\output\Log.obj)

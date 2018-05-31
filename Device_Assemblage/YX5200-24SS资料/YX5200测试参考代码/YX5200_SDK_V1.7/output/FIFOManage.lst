@@ -1,0 +1,112 @@
+C51 COMPILER V9.01   FIFOMANAGE                                                            05/05/2013 11:52:07 PAGE 1   
+
+
+C51 COMPILER V9.01, COMPILATION OF MODULE FIFOMANAGE
+OBJECT MODULE PLACED IN .\output\FIFOManage.obj
+COMPILER INVOKED BY: d:\Keil\C51\BIN\C51.EXE src\FIFOManage.c BROWSE DEBUG OBJECTEXTEND PRINT(.\output\FIFOManage.lst) O
+                    -BJECT(.\output\FIFOManage.obj)
+
+line level    source
+
+   1          #include "config.h"
+   2          #include <stdio.h>
+   3          #include "FIFOManage.h"
+   4          
+   5          /*****************************************************************************************************
+   6           - 功能描述：系统消息优先与用户消息
+   7           - 参数说明：无
+   8           - 返回参数：无
+   9           - 注：
+  10          *****************************************************************************************************/
+  11          INT8U app_get_msg(void) 
+  12          {
+  13   1          INT8U i = MESS_ARRAY_LEN -1;
+  14   1          while(i >= 0)
+  15   1          {
+  16   2              if (MessageArray[i].priority == SYSTEM_MESS && 
+  17   2                  MessageArray[i].Messable == MESS_UNUSABLE)/*系统消息后进先出*/
+  18   2              {  
+  19   3                  MessageArray[i].Messable = MESS_USABLE;
+  20   3      //            return ((INT8U)(MessageArray[i]));
+  21   3              }
+  22   2              i--;
+  23   2          }
+  24   1          i  = 0;
+  25   1          while(i < MESS_ARRAY_LEN)
+  26   1          {
+  27   2              if (MessageArray[i].priority == USER_MESS &&
+  28   2                  MessageArray[i].Messable == MESS_UNUSABLE)/*用户消息先进先出*/
+  29   2              {
+  30   3                  MessageArray[i].Messable = MESS_USABLE;
+  31   3       //          return ((INT8U)(MessageArray[i]));
+  32   3              }
+  33   2              i++;
+  34   2          }  
+  35   1          return NULL;
+  36   1      }
+  37          
+  38          
+  39          /*****************************************************************************************************
+  40           - 功能描述：低优先级先进先出
+  41           - 参数说明：无
+  42           - 返回参数：无
+  43           - 注：
+  44          *****************************************************************************************************/
+  45          void put_msg_fifo(INT8U msg)
+  46          {
+  47   1          INT8U i = 0;
+  48   1          while(i < MESS_ARRAY_LEN)
+  49   1          {
+  50   2              if(MessageArray[i].Messable == MESS_USABLE)
+  51   2              {
+  52   3                  memcpy(&MessageArray[i], &msg, sizeof(MessageDef));
+  53   3                  MessageArray[i].priority = USER_MESS;
+  54   3                  MessageArray[i].Messable = MESS_UNUSABLE;
+C51 COMPILER V9.01   FIFOMANAGE                                                            05/05/2013 11:52:07 PAGE 2   
+
+  55   3              }
+  56   2              i++;
+  57   2          }  
+  58   1      }
+  59          
+  60          
+  61          /*****************************************************************************************************
+  62           - 功能描述：高优先级为后进先出
+  63           - 参数说明：无
+  64           - 返回参数：无
+  65           - 注：
+  66          *****************************************************************************************************/
+  67          void put_msg_lifo(INT8U msg)
+  68          {
+  69   1          INT16U i = MESS_ARRAY_LEN -1;
+  70   1          while(i >= 0)
+  71   1          {
+  72   2              if(MessageArray[i].Messable == MESS_USABLE)
+  73   2              {
+  74   3                  memcpy(&MessageArray[i], &msg, sizeof(MessageDef));   
+  75   3                  MessageArray[i].Messable = MESS_UNUSABLE;
+  76   3                  MessageArray[i].priority = SYSTEM_MESS;
+  77   3              }
+  78   2              i--;
+  79   2          }
+  80   1      }
+  81          
+  82          void flush_all_msg(void)
+  83          {
+  84   1          memset(MessageArray, 0, sizeof(MessageArray));
+  85   1      }
+  86          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    284    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     96       5
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

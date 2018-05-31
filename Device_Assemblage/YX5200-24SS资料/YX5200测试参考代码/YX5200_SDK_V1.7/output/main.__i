@@ -1,0 +1,1 @@
+"src\main.c" BROWSE DEBUG OBJECTEXTEND PRINT(.\output\main.lst) OBJECT(.\output\main.obj)

@@ -1,0 +1,5 @@
+".\output\STARTUP.obj",
+".\output\main.obj",
+".\output\Log.obj" 
+TO ".\output\QYtest" 
+PRINT(".\output\QYtest.m51") RAMSIZE(256) 
