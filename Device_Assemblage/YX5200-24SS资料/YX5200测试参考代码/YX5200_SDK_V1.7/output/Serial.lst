@@ -1,0 +1,13 @@
+C51 COMPILER V9.01   SERIAL                                                                05/02/2013 11:48:01 PAGE 1   
+
+
+C51 COMPILER V9.01, COMPILATION OF MODULE SERIAL
+OBJECT MODULE PLACED IN .\output\Serial.obj
+COMPILER INVOKED BY: d:\Keil\C51\BIN\C51.EXE src\Serial.c BROWSE DEBUG OBJECTEXTEND PRINT(.\output\Serial.lst) OBJECT(.\
+                    -output\Serial.obj)
+
+line level    source
+
+*** ERROR C318 OF src\Serial.c: can't open file 'src\Serial.c'
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  1 ERROR(S)

@@ -1,0 +1,568 @@
+C51 COMPILER V9.01   UART                                                                  07/20/2013 21:44:04 PAGE 1   
+
+
+C51 COMPILER V9.01, COMPILATION OF MODULE UART
+OBJECT MODULE PLACED IN .\output\uart.obj
+COMPILER INVOKED BY: d:\Keil\C51\BIN\C51.EXE src\uart.c BROWSE DEBUG OBJECTEXTEND PRINT(.\output\uart.lst) OBJECT(.\outp
+                    -ut\uart.obj)
+
+line level    source
+
+   1          #include "config.h"
+   2          
+   3          /*********************************************************************************************************
+             -*********
+   4          
+   5                                                  +--------------------------------------------------+
+   6                                                                     串口通讯模块
+   7                                                  +--------------------------------------------------+
+   8          
+   9           - 实现功能：
+  10          
+  11           - 目前进展：
+  12          
+  13           - 运行环境：STC   晶振：11.0592M   波特率:9600   [硬件串口操作]
+  14          
+  15           - 备注    ：在普中科技的51开发板上调试OK --- STC89C516RD+
+  16          
+  17          **********************************************************************************************************
+             -********/
+  18          
+  19          static INT8U Send_buf[SENDLENTH] = {0} ;
+  20          static INT8U Recv_buf[SENDLENTH] = {0} ;
+  21          
+  22          static INT8U SendDataLen = 0 ;
+  23          static INT8U ResendDataLen = 0 ;
+  24          
+  25          code INT8U hex[]={"0123456789ABCDEF"};
+  26          
+  27          void DoSum( INT8U *Str, INT8U len) ;
+  28          void Uart_Task(INT8U *pr);
+  29          /********************************************************************************************
+  30           - 功能描述： 串口发送一个字节
+  31           - 隶属模块： 外部
+  32           - 参数说明：
+  33           - 返回说明：
+  34           - 注：       
+  35          ********************************************************************************************/
+  36          void Uart_PutByte(INT8U ch)
+  37          {
+  38   1          SBUF  = ch;
+  39   1          while(!TI){;}
+  40   1          TI = 0;
+  41   1      }
+  42          
+  43          /********************************************************************************************
+  44           - 功能描述： 串口发送字符串
+  45           - 隶属模块： 外部
+  46           - 参数说明：
+  47           - 返回说明：
+  48           - 注：       
+  49          ********************************************************************************************/
+  50          #if FUNC_UARTDBG_EN
+              void Uart_PutString(INT8U* value)
+              {
+C51 COMPILER V9.01   UART                                                                  07/20/2013 21:44:04 PAGE 2   
+
+                      while((*value) != '\0')
+                      {
+                              Uart_PutByte(*value) ;
+                              value ++ ;
+                      }
+              }
+              #endif
+  60          /********************************************************************************************
+  61           - 功能描述： 串口发送一个字节[调试用]
+  62           - 隶属模块： 外部
+  63           - 参数说明：
+  64           - 返回说明：
+  65           - 注：       
+  66          *******************************************************************************************/
+  67          #if FUNC_UARTDBG_EN
+              void Uart_PutChar(INT8U dat)
+              {
+                      INT8U ch = 0 ;
+                      ch =(dat>>4) & 0x0f;
+                      Uart_PutByte(hex[ch]);
+                      ch = dat & 0x0f;
+                      Uart_PutByte(hex[ch]);
+              }
+              #endif
+  77          
+  78          /*****************************************************************************************************
+  79           - 功能描述： 串口发送数据
+  80           - 隶属模块： 内部 
+  81           - 参数说明： 
+  82           - 返回说明： 
+  83           - 注：无     
+  84          *****************************************************************************************************/
+  85          void SendCmd(INT8U len,bit flag,INT8U time)
+  86          {
+  87   1          bit Status = 0 ;
+  88   1          INT8U i = 0 ;
+  89   1      
+  90   1          Status   = ES;
+  91   1          ES       = 0;
+  92   1          TI       = 0;
+  93   1          Uart_PutByte(0x7E); //起始
+  94   1          for(i=0; i<len; i++)//数据
+  95   1          {
+  96   2                      Uart_PutByte(Send_buf[i]) ;
+  97   2          }
+  98   1          Uart_PutByte(0xEF) ;//结束
+  99   1          ES  = Status;
+ 100   1          if(flag)                  //设置重发标志  溢出时间
+ 101   1          {
+ 102   2              Resend_Flag  = 1; SendDataLen = len;  OutTimeCnt = time;
+ 103   2          }
+ 104   1          else
+ 105   1              {
+ 106   2              Resend_Flag  = 0; SendDataLen = 0;        ResendCount  = 1;
+ 107   2              }
+ 108   1      }
+ 109          
+ 110          /*******************************************************************************************
+ 111           - 功能描述：串口中断
+ 112           - 隶属模块：
+ 113           - 参数说明：
+ 114           - 返回说明：
+C51 COMPILER V9.01   UART                                                                  07/20/2013 21:44:04 PAGE 3   
+
+ 115           - 注：     串口接收是采用状态机的方式
+ 116          *******************************************************************************************/
+ 117          void Serial_0_interrupt(void) interrupt   4
+ 118          {
+ 119   1          
+ 120   1              INT8U UartTemp = 0 ;
+ 121   1              if(RI)
+ 122   1              {       
+ 123   2                      RI = 0;
+ 124   2                      UartTemp  = SBUF;
+ 125   2              if(Busy_Flag)
+ 126   2              {
+ 127   3                  RecvBusy_Flag = 1 ;
+ 128   3              }
+ 129   2              switch(UartRecvStatus)
+ 130   2              {
+ 131   3                  case UART_RECV_IDLE:
+ 132   3                                      if(0x7E == UartTemp)
+ 133   3                                      {
+ 134   4                                          UartRecv_100Ms = 10 ;
+ 135   4                                          UartRecvStatus = UART_RECV_VER ;
+ 136   4                                      }
+ 137   3                                      else
+ 138   3                                      {
+ 139   4                                          UartRecvStatus = UART_RECV_IDLE ;
+ 140   4                                      }
+ 141   3                                      break ;
+ 142   3                  case UART_RECV_VER:
+ 143   3                                      Recv_buf[0] = UartTemp ;
+ 144   3                                      UartRecvStatus = UART_RECV_LENTH ;
+ 145   3                                      break ;
+ 146   3                  case UART_RECV_LENTH:
+ 147   3                                      Recv_buf[1] = UartTemp ;
+ 148   3                                      UartRecvStatus = UART_RECV_CMD ;
+ 149   3                                      break ;
+ 150   3                  case UART_RECV_CMD:
+ 151   3                                      Recv_buf[2] = UartTemp ;
+ 152   3                                      UartRecvStatus = UART_RECV_FEEDBACK ;
+ 153   3                                      break ;
+ 154   3                  case UART_RECV_FEEDBACK:
+ 155   3                                      Recv_buf[3] = UartTemp ;
+ 156   3                                      UartRecvStatus = UART_RECV_DATAH ;
+ 157   3                                      break ;
+ 158   3                  case UART_RECV_DATAH:
+ 159   3                                      Recv_buf[4] = UartTemp ;
+ 160   3                                      UartRecvStatus = UART_RECV_DATAL ;
+ 161   3                                      break ;
+ 162   3                  case UART_RECV_DATAL:
+ 163   3                                      Recv_buf[5] = UartTemp ;
+ 164   3                                      UartRecvStatus = UART_RECV_CHECKSUMH ;
+ 165   3                                      break ;
+ 166   3                  case UART_RECV_CHECKSUMH:
+ 167   3                                      Recv_buf[6] = UartTemp ;
+ 168   3                                      UartRecvStatus = UART_RECV_CHECKSUML ;
+ 169   3                                      break ;
+ 170   3                  case UART_RECV_CHECKSUML:
+ 171   3                                      Recv_buf[7] = UartTemp ;
+ 172   3                                      UartRecvStatus = UART_RECV_OVER ;
+ 173   3                                      break ;
+ 174   3                  case UART_RECV_OVER :
+ 175   3                                      if(0xEF == UartTemp)
+ 176   3                                      {
+C51 COMPILER V9.01   UART                                                                  07/20/2013 21:44:04 PAGE 4   
+
+ 177   4                                          UartRecv_100Ms = 0 ;//清计时器
+ 178   4                                          RecvOver_Flag = 1 ;
+ 179   4                                          UartRecvStatus = UART_RECV_IDLE ;
+ 180   4                                      }
+ 181   3                                      else
+ 182   3                                      {
+ 183   4                                          RecvError_Flag = 1 ;//错误处理
+ 184   4                                          UartRecvStatus = UART_RECV_IDLE ;
+ 185   4                                      }
+ 186   3                                      break ;
+ 187   3                  default :
+ 188   3                                      break ;
+ 189   3              }
+ 190   2              }
+ 191   1      }
+ 192          
+ 193          /********************************************************************************************
+ 194           - 功能描述： 重发处理函数
+ 195           - 隶属模块： 外部
+ 196           - 参数说明：
+ 197           - 返回说明：
+ 198           - 注：
+ 199          ********************************************************************************************/
+ 200          void UartSend_Collide_Task(void)
+ 201          {
+ 202   1          if(1 == Resend_Enable_Flag)
+ 203   1          {
+ 204   2              if(!Resend_Flag) return;            //如果 Resend_Flag1 = 1 时间溢出还没有收到ACK 则重发
+ 205   2      
+ 206   2              ResendCount ++;
+ 207   2      
+ 208   2              if(ResendCount>2)
+ 209   2              {
+ 210   3                  ResendCount  = 1;
+ 211   3                  Resend_Flag  = 0;
+ 212   3                  return;
+ 213   3              }
+ 214   2              SendCmd(ResendDataLen,1,25);    //重发数据
+ 215   2              }
+ 216   1      }
+ 217          /********************************************************************************************
+ 218           - 功能描述：争对接收的命令进行处理
+ 219           - 隶属模块：外部
+ 220           - 参数说明：无
+ 221           - 返回说明：无
+ 222           - 注：      
+ 223          ********************************************************************************************/
+ 224          void Uart_communication(void)
+ 225          {
+ 226   1              INT8U i, *pi ;
+ 227   1      
+ 228   1              INT16U  xorsum =0,xorsum1=0 ;
+ 229   1      
+ 230   1          if(1 == RecvError_Flag)//接收错误处理
+ 231   1          {
+ 232   2              RecvError_Flag = 0 ;
+ 233   2              UartRecvStatus = UART_RECV_IDLE ;
+ 234   2              Uart_SendCMD(0x40 , 0 , 1) ;//错误处理请求重发
+ 235   2              return ;
+ 236   2          }
+ 237   1          if(1 == RecvOver_Flag)//一帧数据接收完毕
+ 238   1          {
+C51 COMPILER V9.01   UART                                                                  07/20/2013 21:44:04 PAGE 5   
+
+ 239   2              RecvOver_Flag = 0 ;
+ 240   2              pi = Recv_buf;
+ 241   2              for(i=0; i<(*(pi+1)); i++)
+ 242   2              {
+ 243   3                  xorsum  = xorsum + pi[i] ;
+ 244   3              }
+ 245   2              xorsum1 = ((INT16U)((*(pi+i))<<8)) | (*(pi+i+1));
+ 246   2              xorsum  = xorsum + xorsum1;
+ 247   2      
+ 248   2              if(!xorsum)
+ 249   2              {
+ 250   3                  Uart_Task(pi);//串口处理
+ 251   3              }
+ 252   2              else
+ 253   2              {
+ 254   3                  RecvError_Flag = 1 ;//错误处理
+ 255   3              }
+ 256   2              UartRecvStatus = UART_RECV_IDLE ;
+ 257   2          }
+ 258   1      }
+ 259          
+ 260          /**********************************************************************************************
+ 261           - 功能描述： 串口处理函数
+ 262           - 隶属模块： 内部
+ 263           - 参数说明： *pr ：串口0需要接收的数据的地址指针
+ 264           - 返回说明： 无
+ 265           - 注： 
+ 266          **********************************************************************************************/
+ 267          void Uart_Task(INT8U *pr)
+ 268          {
+ 269   1          INT16U Temp16 = 0 ;
+ 270   1          INT8U *pi ,tempH ,tempL , CMD , FeedBack;           
+ 271   1          pi = pr;
+ 272   1      
+ 273   1          tempH = *(pi+4) ;
+ 274   1          tempL = *(pi+5) ;
+ 275   1          Temp16 = (((INT16U)(tempH))<<8)|tempL ;
+ 276   1          CMD   = *(pi+2) ;
+ 277   1          FeedBack = *(pi+3) ;
+ 278   1      
+ 279   1          switch(CMD )
+ 280   1          {
+ 281   2              case (0x41)://收到应答ACK
+ 282   2                          UartRecvACK = 0 ;
+ 283   2                          PlayledCnt = PLAYLEDCNT ;
+ 284   2                              PlayledStatus = SET_PLAYLED_ON;
+ 285   2                          break ;
+ 286   2          /**********************************************************************
+ 287   2          - 1、设备插入拔出消息
+ 288   2          **********************************************************************/   
+ 289   2              case (0x3A)://设备插入
+ 290   2                          if(tempL == 0x01)
+ 291   2                          {
+ 292   3                              put_msg_lifo(MSG_UDISK_IN);
+ 293   3                          }
+ 294   2                          else if(tempL == 0x02)
+ 295   2                          {
+ 296   3                              put_msg_lifo(MSG_TF_IN);                    
+ 297   3                          }
+ 298   2                          else if(tempL == 0x04)
+ 299   2                          {
+ 300   3                              put_msg_lifo(MSG_PC_IN);
+C51 COMPILER V9.01   UART                                                                  07/20/2013 21:44:04 PAGE 6   
+
+ 301   3                          }
+ 302   2                          break;
+ 303   2              case (0x3B)://设备拔出
+ 304   2                          if(tempL == 0x01)
+ 305   2                          {
+ 306   3                              put_msg_lifo(MSG_UDISK_OUT);
+ 307   3                          }
+ 308   2                          else if(tempL == 0x02)
+ 309   2                          {
+ 310   3                              put_msg_lifo(MSG_TF_OUT);                    
+ 311   3                          }
+ 312   2                          else if(tempL == 0x04)
+ 313   2                          {
+ 314   3                              put_msg_lifo(MSG_PC_OUT);
+ 315   3                          }
+ 316   2                          break;
+ 317   2                          
+ 318   2          /**********************************************************************
+ 319   2          - 1、收到当前曲目播放完毕消息
+ 320   2          **********************************************************************/   
+ 321   2              case (0x3C)://U盘当前曲目播放完毕
+ 322   2                          if(PLAYDEVICE_UDISK == PlayDevice)
+ 323   2                          {
+ 324   3                              put_msg_lifo(MSG_MUSIC_OVER);
+ 325   3                          }
+ 326   2                          break;
+ 327   2              case (0x3D)://TF当前曲目播放完毕
+ 328   2                          if(PLAYDEVICE_TFCARD == PlayDevice)
+ 329   2                          {
+ 330   3                              put_msg_lifo(MSG_MUSIC_OVER);
+ 331   3                          }
+ 332   2                          break ;
+ 333   2              case (0x3E)://FLASH当前曲目播放完毕
+ 334   2                          if(PLAYDEVICE_FLASH == PlayDevice)
+ 335   2                          {
+ 336   3                              put_msg_lifo(MSG_MUSIC_OVER);
+ 337   3                          }
+ 338   2                          break ;
+ 339   2          /**********************************************************************
+ 340   2          - 1、模块上电返回的数据
+ 341   2          **********************************************************************/  
+ 342   2              case (0x3F):
+ 343   2                          OnlineDevice = tempL ;
+ 344   2                          put_msg_lifo(MSG_RETURN_MINIT);
+ 345   2                          break ;
+ 346   2      
+ 347   2          /**********************************************************************
+ 348   2          - 1、模块返回的错误
+ 349   2          **********************************************************************/  
+ 350   2              case (0x40):
+ 351   2                          ErrorStatus = tempL ;
+ 352   2                          put_msg_lifo(MSG_RECV_ERROR);
+ 353   2                          break ;
+ 354   2                          
+ 355   2          /**********************************************************************
+ 356   2          - 1、查询参数
+ 357   2          **********************************************************************/
+ 358   2              case (0x42)://查询当前状态
+ 359   2                        
+ 360   2                          break;
+ 361   2              case (0x43)://查询当前系统音量
+ 362   2                          input_vol = tempL ;
+C51 COMPILER V9.01   UART                                                                  07/20/2013 21:44:04 PAGE 7   
+
+ 363   2                          put_msg_lifo(MSG_RETURN_VOL);  
+ 364   2                          break;
+ 365   2              case (0x44)://查询当前EQ
+ 366   2                          CurrentEQ = tempL ;
+ 367   2                          put_msg_lifo(MSG_RETURN_EQ);  
+ 368   2                          break;
+ 369   2              case (0x45)://查询当前播放模式
+ 370   2                          PlayMode = tempL ;
+ 371   2                          put_msg_lifo(MSG_RETURN_PLAYMODE);  
+ 372   2                          break;
+ 373   2              case (0x46)://查询当前软件版本
+ 374   2      
+ 375   2                          break;
+ 376   2          /**********************************************************************
+ 377   2          - 1、查询参数 --- 设备总文件数
+ 378   2          **********************************************************************/
+ 379   2              case (0x47)://查询UDISK文件总数
+ 380   2                          UDiskTotal = Temp16 ;
+ 381   2                          put_msg_lifo(MSG_RETURN_NUMTOTAL); 
+ 382   2                          break ;
+ 383   2              case (0x48)://查询TFCARD文件总数
+ 384   2                          TFTotal = Temp16 ;
+ 385   2                          put_msg_lifo(MSG_RETURN_NUMTOTAL);
+ 386   2                          break ;
+ 387   2              case (0x49)://查询FLASH文件总数
+ 388   2                          FlashTotal = Temp16 ;
+ 389   2                          put_msg_lifo(MSG_RETURN_NUMTOTAL); 
+ 390   2                          break;
+ 391   2      
+ 392   2          /**********************************************************************
+ 393   2          - 1、查询参数 --- 设备当前播放的文件数
+ 394   2          **********************************************************************/   
+ 395   2              case (0x4B)://查询UDISK的当前曲目
+ 396   2                          UDiskCurFile = Temp16 ;
+ 397   2                          put_msg_lifo(MSG_RETURN_CURNUM);
+ 398   2                          break;
+ 399   2          
+ 400   2              case (0x4C)://查询TF卡的当前曲目
+ 401   2                          TFCurFile = Temp16 ;
+ 402   2                          put_msg_lifo(MSG_RETURN_CURNUM);
+ 403   2                          break ;
+ 404   2                        
+ 405   2              case (0x4D)://查询FLASH的当前曲目
+ 406   2                          FlashCurFile = Temp16 ;
+ 407   2                          put_msg_lifo(MSG_RETURN_CURNUM);
+ 408   2                          break;
+ 409   2              default:
+ 410   2                          break;
+ 411   2          }
+ 412   1      }
+ 413          
+ 414          
+ 415          
+ 416          /********************************************************************************************
+ 417           - 功能描述： 串口向外发送命令[包括控制和查询]
+ 418           - 隶属模块： 外部
+ 419           - 参数说明： CMD:表示控制指令，请查阅指令表，还包括查询的相关指令
+ 420                        feedback:是否需要应答[0:不需要应答，1:需要应答]
+ 421                        data:传送的参数
+ 422           - 返回说明：
+ 423           - 注：       
+ 424          ********************************************************************************************/
+C51 COMPILER V9.01   UART                                                                  07/20/2013 21:44:04 PAGE 8   
+
+ 425          void Uart_SendCMD(INT8U CMD ,INT8U feedback , INT16U dat)
+ 426          {
+ 427   1          Send_buf[0] = 0xff;    //保留字节 
+ 428   1          Send_buf[1] = 0x06;    //长度
+ 429   1          Send_buf[2] = CMD;     //控制指令
+ 430   1          Send_buf[3] = feedback;//是否需要反馈
+ 431   1          Send_buf[4] = (INT8U)(dat >> 8);//datah
+ 432   1          Send_buf[5] = (INT8U)(dat);     //datal
+ 433   1          DoSum(&Send_buf[0],6);        //校验
+ 434   1          SendCmd(8,1,30);       //发送此帧数据
+ 435   1          UartRecvACK = 3 ;//设定等待应答的时间[300ms]
+ 436   1      }
+ 437          
+ 438          
+ 439          /********************************************************************************************
+ 440           - 功能描述：求和校验
+ 441           - 隶属模块：
+ 442           - 参数说明：
+ 443           - 返回说明：
+ 444           - 注：      和校验的思路如下
+ 445                       发送的指令，去掉起始和结束。将中间的6个字节进行累加，最后取反码
+ 446                       接收端就将接收到的一帧数据，去掉起始和结束。将中间的数据累加，再加上接收到的校验
+ 447                       字节。刚好为0.这样就代表接收到的数据完全正确。
+ 448          ********************************************************************************************/
+ 449          void DoSum( INT8U *Str, INT8U len)
+ 450          {
+ 451   1          INT16U xorsum = 0;
+ 452   1          INT8U i;
+ 453   1      
+ 454   1          for(i=0; i<len; i++)
+ 455   1          {
+ 456   2              xorsum  = xorsum + Str[i];
+ 457   2          }
+ 458   1              xorsum     = 0 -xorsum;
+ 459   1              *(Str+i)   = (INT8U)(xorsum >>8);
+ 460   1              *(Str+i+1) = (INT8U)(xorsum & 0x00ff);
+ 461   1      }
+ 462          
+ 463          
+ 464          
+ 465          
+ 466          
+ 467          
+ 468          
+ 469          
+ 470          
+ 471          
+ 472          
+ 473          
+ 474          
+ 475          
+ 476          
+ 477          
+ 478          
+ 479          
+ 480          
+ 481          
+ 482          
+ 483          
+ 484          
+ 485          
+ 486          
+C51 COMPILER V9.01   UART                                                                  07/20/2013 21:44:04 PAGE 9   
+
+ 487          
+ 488          
+ 489          
+ 490          
+ 491          
+ 492          
+ 493          
+ 494          
+ 495          
+ 496          
+ 497          
+ 498          
+ 499          
+ 500          
+ 501          
+ 502          
+ 503          
+ 504          
+ 505          
+ 506          
+ 507          
+ 508          
+ 509          
+ 510          
+ 511          
+ 512          
+ 513          
+ 514          
+ 515          
+ 516          
+ 517          
+ 518          
+ 519          
+ 520          
+ 521          
+ 522          
+ 523          
+ 524          
+ 525          
+ 526          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    937    ----
+   CONSTANT SIZE    =     17    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     22      19
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----       2
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
