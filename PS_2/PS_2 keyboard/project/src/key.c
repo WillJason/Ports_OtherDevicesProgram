@@ -26,7 +26,7 @@ uint8_t key_down_edge_function(void)
 	{
 		if(key_down_conuter[0] < 10) 
 		{
-			key_down_conuter[0] ++;
+			key_down_conuter[0]++;
 		}
 		else
 		{
@@ -38,7 +38,7 @@ uint8_t key_down_edge_function(void)
 	{
 		if(key_down_conuter[0] > 1) 
 		{
-			key_down_conuter[0] --;
+			key_down_conuter[0]--;
 		}
 		else 
 		{
@@ -55,7 +55,7 @@ uint8_t key_down_edge_function(void)
 	{
 		if(key_down_conuter[1] < 10) 
 		{
-			key_down_conuter[1] ++;
+			key_down_conuter[1]++;
 		}
 		else
 		{
@@ -68,7 +68,7 @@ uint8_t key_down_edge_function(void)
 	{
 		if(key_down_conuter[1] > 1) 
 		{
-			key_down_conuter[1] --;
+			key_down_conuter[1]--;
 		}
 		else
 		{
